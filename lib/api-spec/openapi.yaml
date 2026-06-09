@@ -1,0 +1,933 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Arabic Social App API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: users
+  - name: friends
+  - name: messages
+  - name: groups
+  - name: posts
+  - name: points
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: Username taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/{userId}:
+    get:
+      operationId: getUserById
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/me/profile:
+    patch:
+      operationId: updateProfile
+      tags: [users]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/me/avatar:
+    post:
+      operationId: updateAvatar
+      tags: [users]
+      summary: Update avatar (base64)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvatarInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /friends:
+    get:
+      operationId: getFriends
+      tags: [friends]
+      summary: Get friends list
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /friends/requests:
+    get:
+      operationId: getFriendRequests
+      tags: [friends]
+      summary: Get pending friend requests
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FriendRequest"
+    post:
+      operationId: sendFriendRequest
+      tags: [friends]
+      summary: Send friend request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FriendRequestInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendRequest"
+
+  /friends/requests/{requestId}:
+    patch:
+      operationId: respondFriendRequest
+      tags: [friends]
+      summary: Accept or reject friend request
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FriendRequestAction"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendRequest"
+
+  /friends/{friendId}:
+    delete:
+      operationId: removeFriend
+      tags: [friends]
+      summary: Remove friend
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /messages/{userId}:
+    get:
+      operationId: getMessages
+      tags: [messages]
+      summary: Get messages with a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send message to user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /messages/conversations:
+    get:
+      operationId: getConversations
+      tags: [messages]
+      summary: Get all conversations summary
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+
+  /groups:
+    get:
+      operationId: getGroups
+      tags: [groups]
+      summary: Get all groups user belongs to
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Group"
+    post:
+      operationId: createGroup
+      tags: [groups]
+      summary: Create a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+
+  /groups/{groupId}:
+    get:
+      operationId: getGroup
+      tags: [groups]
+      summary: Get group by ID
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+    patch:
+      operationId: updateGroup
+      tags: [groups]
+      summary: Update group info (owner/admin only)
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+
+  /groups/{groupId}/join:
+    post:
+      operationId: requestJoinGroup
+      tags: [groups]
+      summary: Request to join a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /groups/{groupId}/join-requests:
+    get:
+      operationId: getJoinRequests
+      tags: [groups]
+      summary: Get pending join requests (owner/admin only)
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JoinRequest"
+
+  /groups/{groupId}/join-requests/{requestId}:
+    patch:
+      operationId: respondJoinRequest
+      tags: [groups]
+      summary: Accept or reject join request
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinRequestAction"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinRequest"
+
+  /groups/{groupId}/members/{memberId}:
+    delete:
+      operationId: removeGroupMember
+      tags: [groups]
+      summary: Remove member from group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: memberId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /posts:
+    get:
+      operationId: getPosts
+      tags: [posts]
+      summary: Get feed posts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/{postId}/like:
+    post:
+      operationId: toggleLike
+      tags: [posts]
+      summary: Toggle like on a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /points:
+    get:
+      operationId: getPoints
+      tags: [points]
+      summary: Get current user points balance
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PointsBalance"
+
+  /points/gifts:
+    post:
+      operationId: sendGift
+      tags: [points]
+      summary: Send gift to user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GiftInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: ["string", "null"]
+
+    User:
+      type: object
+      required: [id, userId, username, displayName, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+          description: 8-digit unique user ID
+        username:
+          type: string
+        displayName:
+          type: string
+        bio:
+          type: ["string", "null"]
+        avatarBase64:
+          type: ["string", "null"]
+        points:
+          type: integer
+        createdAt:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, sessionId]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        sessionId:
+          type: string
+
+    RegisterInput:
+      type: object
+      required: [username, displayName, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+        displayName:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 6
+
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    ProfileUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        bio:
+          type: string
+
+    AvatarInput:
+      type: object
+      required: [avatarBase64]
+      properties:
+        avatarBase64:
+          type: string
+
+    FriendRequest:
+      type: object
+      required: [id, fromUserId, toUserId, status, createdAt]
+      properties:
+        id:
+          type: string
+        fromUserId:
+          type: string
+        toUserId:
+          type: string
+        fromUser:
+          $ref: "#/components/schemas/User"
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt:
+          type: string
+
+    FriendRequestInput:
+      type: object
+      required: [toUserId]
+      properties:
+        toUserId:
+          type: string
+          description: 8-digit user ID of the target
+
+    FriendRequestAction:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [accept, reject]
+
+    Message:
+      type: object
+      required: [id, fromUserId, toUserId, type, createdAt]
+      properties:
+        id:
+          type: string
+        fromUserId:
+          type: string
+        toUserId:
+          type: string
+        type:
+          type: string
+          enum: [text, image, video]
+        content:
+          type: ["string", "null"]
+        mediaBase64:
+          type: ["string", "null"]
+        mediaType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    MessageInput:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [text, image, video]
+        content:
+          type: string
+        mediaBase64:
+          type: string
+        mediaType:
+          type: string
+
+    Conversation:
+      type: object
+      required: [userId, user, lastMessage, unreadCount]
+      properties:
+        userId:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        lastMessage:
+          $ref: "#/components/schemas/Message"
+        unreadCount:
+          type: integer
+
+    Group:
+      type: object
+      required: [id, groupId, name, ownerId, joinRequestsEnabled, createdAt]
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+          description: Unique searchable group ID
+        name:
+          type: string
+        bio:
+          type: ["string", "null"]
+        avatarBase64:
+          type: ["string", "null"]
+        ownerId:
+          type: string
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMember"
+        joinRequestsEnabled:
+          type: boolean
+        memberCount:
+          type: integer
+        createdAt:
+          type: string
+
+    GroupMember:
+      type: object
+      required: [userId, role, joinedAt]
+      properties:
+        userId:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        role:
+          type: string
+          enum: [owner, admin, member]
+        joinedAt:
+          type: string
+
+    GroupInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        bio:
+          type: string
+        joinRequestsEnabled:
+          type: boolean
+
+    GroupUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        bio:
+          type: string
+        avatarBase64:
+          type: string
+        joinRequestsEnabled:
+          type: boolean
+
+    JoinRequest:
+      type: object
+      required: [id, groupId, userId, status, createdAt]
+      properties:
+        id:
+          type: string
+        groupId:
+          type: string
+        userId:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt:
+          type: string
+
+    JoinRequestAction:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [accept, reject]
+
+    Post:
+      type: object
+      required: [id, authorId, content, likes, createdAt]
+      properties:
+        id:
+          type: string
+        authorId:
+          type: string
+        author:
+          $ref: "#/components/schemas/User"
+        content:
+          type: string
+        mediaBase64:
+          type: ["string", "null"]
+        mediaType:
+          type: ["string", "null"]
+        likes:
+          type: array
+          items:
+            type: string
+        likeCount:
+          type: integer
+        isLiked:
+          type: boolean
+        createdAt:
+          type: string
+
+    PostInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+        mediaBase64:
+          type: string
+        mediaType:
+          type: string
+
+    PointsBalance:
+      type: object
+      required: [userId, points, giftsReceived, giftsSent]
+      properties:
+        userId:
+          type: string
+        points:
+          type: integer
+        giftsReceived:
+          type: array
+          items:
+            $ref: "#/components/schemas/GiftRecord"
+        giftsSent:
+          type: array
+          items:
+            $ref: "#/components/schemas/GiftRecord"
+
+    GiftInput:
+      type: object
+      required: [toUserId, giftType, points]
+      properties:
+        toUserId:
+          type: string
+        giftType:
+          type: string
+          enum: [rose, star, crown, heart, diamond]
+        points:
+          type: integer
+
+    GiftRecord:
+      type: object
+      required: [id, fromUserId, toUserId, giftType, points, createdAt]
+      properties:
+        id:
+          type: string
+        fromUserId:
+          type: string
+        toUserId:
+          type: string
+        fromUser:
+          $ref: "#/components/schemas/User"
+        giftType:
+          type: string
+        points:
+          type: integer
+        createdAt:
+          type: string
